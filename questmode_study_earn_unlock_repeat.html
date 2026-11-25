@@ -1,0 +1,1425 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QuestMode — Study. Earn. Unlock. Repeat.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+          colors: {
+            obsidian: '#09090b',
+            panel: '#121216',
+            panelHover: '#19191f',
+            borderSubtle: '#26262e',
+            gold: {
+              DEFAULT: '#d4af37',
+              light: '#e8cb67',
+              muted: '#9e8229',
+            },
+            rare: '#a855f7',
+            emeraldQuest: '#10b981',
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    body {
+      background-color: #09090b;
+      color: #f4f4f5;
+      font-family: 'Inter', system-ui, sans-serif;
+    }
+    .rpg-card {
+      background: linear-gradient(180deg, rgba(24, 24, 30, 0.92) 0%, rgba(15, 15, 19, 0.98) 100%);
+      border: 1px solid #27272f;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+    }
+    .rpg-card-gold {
+      background: linear-gradient(180deg, rgba(30, 26, 18, 0.92) 0%, rgba(15, 15, 19, 0.98) 100%);
+      border: 1px solid rgba(212, 175, 55, 0.35);
+      box-shadow: 0 8px 28px rgba(212, 175, 55, 0.08);
+    }
+    .xp-shimmer {
+      background: linear-gradient(90deg, #b38f22 0%, #e8cb67 50%, #d4af37 100%);
+      transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.35); }
+      50% { box-shadow: 0 0 22px 2px rgba(212, 175, 55, 0.25); }
+    }
+    .pulse-gold {
+      animation: pulseGlow 2.4s infinite;
+    }
+    @keyframes chestShake {
+      0%, 100% { transform: rotate(0deg) scale(1); }
+      20% { transform: rotate(-6deg) scale(1.05); }
+      40% { transform: rotate(6deg) scale(1.08); }
+      60% { transform: rotate(-4deg) scale(1.06); }
+      80% { transform: rotate(4deg) scale(1.04); }
+    }
+    .chest-opening {
+      animation: chestShake 0.65s ease-in-out;
+    }
+    body.reduced-motion * {
+      animation: none !important;
+      transition: none !important;
+    }
+  </style>
+</head>
+<body class="min-h-screen antialiased selection:bg-gold/30 selection:text-gold-light">
+  <div id="app" class="min-h-screen flex flex-col md:flex-row">
+    <!-- Collapsible Desktop Sidebar -->
+    <aside id="desktop-sidebar" class="hidden md:flex md:flex-col md:w-64 shrink-0 border-r border-borderSubtle bg-panel/90 backdrop-blur-md transition-all duration-200">
+      <div class="p-4 border-b border-borderSubtle flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2.5 overflow-hidden">
+          <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-gold/25 to-amber-900/20 border border-gold/40 flex items-center justify-center text-gold font-bold shrink-0">
+            Q
+          </div>
+          <div class="sidebar-label truncate">
+            <div class="font-bold text-white text-sm leading-tight">QuestMode</div>
+            <div class="text-[11px] text-zinc-400">Study. Earn. Unlock.</div>
+          </div>
+        </div>
+        <button id="btn-toggle-sidebar" class="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-obsidian cursor-pointer" title="Collapse Sidebar">
+          <i data-lucide="panel-left-close" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <nav id="sidebar-nav" class="flex-1 p-3 space-y-1 overflow-y-auto">
+        <button data-tab="dashboard" class="nav-btn w-full px-3 py-2.5 rounded-xl text-sm font-medium transition flex items-center gap-3 cursor-pointer"><i data-lucide="layout-dashboard" class="w-4 h-4 shrink-0"></i><span class="sidebar-label">Dashboard</span></button>
+        <button data-tab="quests" class="nav-btn w-full px-3 py-2.5 rounded-xl text-sm font-medium transition flex items-center gap-3 cursor-pointer"><i data-lucide="scroll-text" class="w-4 h-4 shrink-0"></i><span class="sidebar-label">Quest Manager</span></button>
+        <button data-tab="focus" class="nav-btn w-full px-3 py-2.5 rounded-xl text-sm font-medium transition flex items-center gap-3 cursor-pointer"><i data-lucide="crosshair" class="w-4 h-4 shrink-0"></i><span class="sidebar-label">Focus Mode</span></button>
+        <button data-tab="shop" class="nav-btn w-full px-3 py-2.5 rounded-xl text-sm font-medium transition flex items-center gap-3 cursor-pointer"><i data-lucide="shopping-bag" class="w-4 h-4 shrink-0"></i><span class="sidebar-label">Reward Shop</span></button>
+        <button data-tab="loot" class="nav-btn w-full px-3 py-2.5 rounded-xl text-sm font-medium transition flex items-center gap-3 cursor-pointer"><i data-lucide="package-open" class="w-4 h-4 shrink-0"></i><span class="sidebar-label">Loot Boxes</span></button>
+        <button data-tab="battlepass" class="nav-btn w-full px-3 py-2.5 rounded-xl text-sm font-medium transition flex items-center gap-3 cursor-pointer"><i data-lucide="award" class="w-4 h-4 shrink-0"></i><span class="sidebar-label">Battle Pass</span></button>
+        <button data-tab="myrewards" class="nav-btn w-full px-3 py-2.5 rounded-xl text-sm font-medium transition flex items-center gap-3 cursor-pointer"><i data-lucide="gift" class="w-4 h-4 shrink-0"></i><span class="sidebar-label">My Rewards</span></button>
+        <button data-tab="inventory" class="nav-btn w-full px-3 py-2.5 rounded-xl text-sm font-medium transition flex items-center gap-3 cursor-pointer"><i data-lucide="backpack" class="w-4 h-4 shrink-0"></i><span class="sidebar-label">Inventory</span></button>
+        <button data-tab="achievements" class="nav-btn w-full px-3 py-2.5 rounded-xl text-sm font-medium transition flex items-center gap-3 cursor-pointer"><i data-lucide="trophy" class="w-4 h-4 shrink-0"></i><span class="sidebar-label">Achievements</span></button>
+        <button data-tab="analytics" class="nav-btn w-full px-3 py-2.5 rounded-xl text-sm font-medium transition flex items-center gap-3 cursor-pointer"><i data-lucide="bar-chart-3" class="w-4 h-4 shrink-0"></i><span class="sidebar-label">Analytics</span></button>
+        <button data-tab="settings" class="nav-btn w-full px-3 py-2.5 rounded-xl text-sm font-medium transition flex items-center gap-3 cursor-pointer"><i data-lucide="settings" class="w-4 h-4 shrink-0"></i><span class="sidebar-label">Settings</span></button>
+      </nav>
+    </aside>
+
+    <!-- Main Column -->
+    <div class="flex-1 flex flex-col min-w-0">
+      <!-- Top HUD -->
+      <header id="top-hud" class="sticky top-0 z-30 border-b border-borderSubtle bg-obsidian/90 backdrop-blur-md">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+          <div class="flex items-center gap-2.5 md:hidden">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-gold/25 to-amber-900/20 border border-gold/40 flex items-center justify-center text-gold font-bold">Q</div>
+            <span class="font-bold text-white text-base">QuestMode</span>
+          </div>
+          <div class="hidden md:flex items-center gap-2 text-xs text-zinc-400">
+            <span class="text-[11px] uppercase tracking-widest text-gold/90 border border-gold/30 bg-gold/10 px-2.5 py-0.5 rounded-full">Complete Edition</span>
+            <span id="hud-goal-summary">Daily Goal: 0 / 60m</span>
+          </div>
+
+          <div class="flex items-center gap-2 flex-wrap">
+            <div class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-panel border border-borderSubtle text-xs">
+              <i data-lucide="shield" class="w-3.5 h-3.5 text-gold"></i>
+              <span id="hud-level" class="font-semibold text-white">Lv 1</span>
+              <span id="hud-rank" class="text-zinc-400 hidden sm:inline">· Novice</span>
+            </div>
+            <div class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-panel border border-borderSubtle text-xs">
+              <i data-lucide="coins" class="w-3.5 h-3.5 text-gold"></i>
+              <span id="hud-coins" class="font-semibold text-gold-light">0</span>
+            </div>
+            <div class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-panel border border-borderSubtle text-xs">
+              <i data-lucide="flame" class="w-3.5 h-3.5 text-amber-400"></i>
+              <span id="hud-streak" class="font-semibold text-white">1d</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mobile Compact Nav -->
+        <nav id="main-nav" class="md:hidden px-3 pb-2 flex items-center gap-1 overflow-x-auto">
+          <button data-tab="dashboard" class="nav-btn px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap">Dashboard</button>
+          <button data-tab="quests" class="nav-btn px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap">Quests</button>
+          <button data-tab="focus" class="nav-btn px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap">Focus</button>
+          <button data-tab="shop" class="nav-btn px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap">Shop</button>
+          <button data-tab="loot" class="nav-btn px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap">Loot</button>
+          <button data-tab="battlepass" class="nav-btn px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap">Pass</button>
+          <button data-tab="myrewards" class="nav-btn px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap">My Rewards</button>
+          <button data-tab="inventory" class="nav-btn px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap">Inventory</button>
+          <button data-tab="achievements" class="nav-btn px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap">Badges</button>
+          <button data-tab="analytics" class="nav-btn px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap">Analytics</button>
+          <button data-tab="settings" class="nav-btn px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap">Settings</button>
+        </nav>
+      </header>
+
+      <main class="flex-1 max-w-6xl w-full mx-auto px-4 py-6">
+        <!-- 1. DASHBOARD -->
+        <section id="view-dashboard" class="view-section space-y-6">
+          <div class="rpg-card-gold rounded-2xl p-5 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div class="flex items-start sm:items-center gap-4">
+              <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-gold/30 via-amber-900/20 to-zinc-900 border border-gold/50 flex items-center justify-center shrink-0">
+                <i data-lucide="swords" class="w-8 h-8 text-gold"></i>
+              </div>
+              <div class="space-y-1.5 flex-1 min-w-0">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <h1 id="dash-username" class="text-xl sm:text-2xl font-bold text-white">Scholar</h1>
+                  <span id="dash-rank-badge" class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-gold/15 text-gold-light border border-gold/30">Novice</span>
+                </div>
+                <p class="text-sm text-zinc-400">Level <span id="dash-level" class="text-white font-semibold">1</span> · <span id="dash-total-xp" class="text-zinc-200 font-medium">0</span> Total XP</p>
+                <div class="w-full max-w-md pt-1">
+                  <div class="flex justify-between text-xs text-zinc-400 mb-1">
+                    <span>Level Progress</span>
+                    <span id="dash-xp-text">0 / 100 XP</span>
+                  </div>
+                  <div class="h-2.5 w-full bg-zinc-900 rounded-full overflow-hidden border border-zinc-800">
+                    <div id="dash-xp-bar" class="h-full xp-shimmer rounded-full" style="width: 0%"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <button id="btn-start-quest-hero" class="pulse-gold px-5 py-3 rounded-xl bg-gold hover:bg-gold-light text-obsidian font-bold text-sm transition flex items-center justify-center gap-2 cursor-pointer shrink-0">
+              <i data-lucide="play" class="w-4 h-4 fill-current"></i> Start Quest
+            </button>
+          </div>
+
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div class="rpg-card rounded-xl p-4">
+              <div class="flex items-center justify-between text-zinc-400 text-xs mb-2"><span>Available Coins</span><i data-lucide="coins" class="w-4 h-4 text-gold"></i></div>
+              <div id="stat-coins" class="text-2xl font-bold text-gold-light">0</div>
+              <p class="text-xs text-zinc-500 mt-1">Spend in Reward Shop</p>
+            </div>
+            <div class="rpg-card rounded-xl p-4">
+              <div class="flex items-center justify-between text-zinc-400 text-xs mb-2"><span>Today's Quests</span><i data-lucide="check-circle-2" class="w-4 h-4 text-emeraldQuest"></i></div>
+              <div id="stat-today-quests" class="text-2xl font-bold text-white">0</div>
+              <p id="stat-daily-goal-pct" class="text-xs text-zinc-500 mt-1">0% of daily goal</p>
+            </div>
+            <div class="rpg-card rounded-xl p-4">
+              <div class="flex items-center justify-between text-zinc-400 text-xs mb-2"><span>Study Duration</span><i data-lucide="clock" class="w-4 h-4 text-rare"></i></div>
+              <div id="stat-study-time" class="text-2xl font-bold text-white">0m</div>
+              <p class="text-xs text-zinc-500 mt-1">Total logged focus</p>
+            </div>
+            <div class="rpg-card rounded-xl p-4">
+              <div class="flex items-center justify-between text-zinc-400 text-xs mb-2"><span>Daily Streak</span><i data-lucide="flame" class="w-4 h-4 text-amber-400"></i></div>
+              <div id="stat-streak" class="text-2xl font-bold text-white">1 day</div>
+              <p class="text-xs text-zinc-500 mt-1">Keep the momentum</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            <div class="lg:col-span-2 rpg-card rounded-2xl p-5">
+              <div class="flex items-center justify-between gap-2 mb-3">
+                <h2 class="text-sm font-semibold uppercase tracking-wider text-zinc-400 flex items-center gap-2"><i data-lucide="target" class="w-4 h-4 text-gold"></i> Active Quest</h2>
+                <button data-goto="quests" class="text-xs text-gold hover:text-gold-light cursor-pointer">Manage Quests →</button>
+              </div>
+              <div id="dash-active-quest"></div>
+            </div>
+            <div class="rpg-card rounded-2xl p-5">
+              <div class="flex items-center justify-between gap-2 mb-3">
+                <h2 class="text-sm font-semibold uppercase tracking-wider text-zinc-400 flex items-center gap-2"><i data-lucide="gift" class="w-4 h-4 text-rare"></i> Upcoming Rewards</h2>
+                <button data-goto="shop" class="text-xs text-gold hover:text-gold-light cursor-pointer">Open Shop →</button>
+              </div>
+              <div id="dash-upcoming-rewards" class="space-y-2.5"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2. QUEST MANAGER -->
+        <section id="view-quests" class="view-section hidden space-y-5">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h1 class="text-xl font-bold text-white">Quest Manager</h1>
+              <p class="text-sm text-zinc-400">Create, edit, and organize subjects & topics into quests.</p>
+            </div>
+            <button id="btn-open-quest-modal" class="px-4 py-2.5 rounded-xl bg-gold hover:bg-gold-light text-obsidian font-semibold text-sm flex items-center justify-center gap-2 cursor-pointer">
+              <i data-lucide="plus" class="w-4 h-4"></i> New Quest
+            </button>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <select id="filter-subject" class="bg-panel border border-borderSubtle rounded-lg px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-gold"><option value="all">All Subjects</option></select>
+            <select id="filter-status" class="bg-panel border border-borderSubtle rounded-lg px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-gold">
+              <option value="pending">Active / Pending</option>
+              <option value="completed">Completed</option>
+              <option value="all">All Statuses</option>
+            </select>
+          </div>
+          <div id="quest-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+        </section>
+
+        <!-- 3. FOCUS MODE -->
+        <section id="view-focus" class="view-section hidden">
+          <div class="max-w-2xl mx-auto rpg-card-gold rounded-2xl p-6 sm:p-8 text-center space-y-6">
+            <div class="flex items-center justify-between text-xs text-zinc-400">
+              <span class="uppercase tracking-widest text-gold font-semibold flex items-center gap-1.5"><i data-lucide="crosshair" class="w-3.5 h-3.5"></i> Focus Mode</span>
+              <div class="flex items-center gap-3">
+                <button id="btn-ambient-toggle" class="px-2.5 py-1 rounded-lg bg-obsidian border border-borderSubtle text-zinc-300 hover:text-gold-light transition flex items-center gap-1.5 cursor-pointer">
+                  <i data-lucide="volume-x" class="w-3.5 h-3.5"></i> <span>Ambient: Off</span>
+                </button>
+                <button id="btn-exit-focus" class="text-zinc-400 hover:text-white transition flex items-center gap-1 cursor-pointer"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Exit Focus</button>
+              </div>
+            </div>
+            <div id="focus-quest-info" class="space-y-1"></div>
+            <div class="inline-flex flex-wrap justify-center gap-1.5 p-1 rounded-xl bg-obsidian border border-borderSubtle">
+              <button data-timer-mode="pomodoro" class="timer-mode-btn px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer">Pomodoro (25m)</button>
+              <button data-timer-mode="countdown" class="timer-mode-btn px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer">Quest Est.</button>
+              <button data-timer-mode="stopwatch" class="timer-mode-btn px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer">Stopwatch</button>
+              <button data-timer-mode="untimed" class="timer-mode-btn px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer">Topic-Based</button>
+            </div>
+            <div class="py-2">
+              <div id="focus-timer-display" class="text-5xl sm:text-6xl font-extrabold tracking-tight text-white tabular-nums">25:00</div>
+              <p id="focus-timer-sub" class="text-xs text-zinc-400 mt-2">Ready to begin</p>
+            </div>
+            <label class="inline-flex items-center gap-2 text-xs text-zinc-300 cursor-pointer">
+              <input id="chk-no-social" type="checkbox" checked class="accent-emeraldQuest w-4 h-4 cursor-pointer" />
+              <span>I stayed off social media during this session (unlocks Discipline badge)</span>
+            </label>
+            <div class="flex flex-wrap items-center justify-center gap-3">
+              <button id="btn-timer-toggle" class="px-6 py-3 rounded-xl bg-gold hover:bg-gold-light text-obsidian font-bold text-sm flex items-center gap-2 cursor-pointer"><i data-lucide="play" class="w-4 h-4 fill-current"></i> Start Timer</button>
+              <button id="btn-timer-reset" class="px-4 py-3 rounded-xl bg-panel hover:bg-panelHover border border-borderSubtle text-zinc-200 text-sm font-medium cursor-pointer">Reset</button>
+              <button id="btn-complete-quest" class="px-6 py-3 rounded-xl bg-emeraldQuest hover:bg-emerald-400 text-obsidian font-bold text-sm flex items-center gap-2 cursor-pointer"><i data-lucide="check-circle" class="w-4 h-4"></i> Complete Quest</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 4. REWARD SHOP -->
+        <section id="view-shop" class="view-section hidden space-y-6">
+          <div id="break-timer-card" class="hidden rpg-card-gold rounded-2xl p-6 text-center space-y-4">
+            <span class="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-emeraldQuest bg-emeraldQuest/10 border border-emeraldQuest/30 px-3 py-1 rounded-full"><i data-lucide="coffee" class="w-3.5 h-3.5"></i> Reward Break Active</span>
+            <h2 id="break-reward-name" class="text-2xl font-bold text-white">Enjoy your reward!</h2>
+            <div id="break-countdown" class="text-5xl font-extrabold text-gold-light tabular-nums">04:00</div>
+            <p id="break-next-quest" class="text-sm text-zinc-400"></p>
+            <button id="btn-return-study" class="px-5 py-2.5 rounded-xl bg-gold hover:bg-gold-light text-obsidian font-bold text-sm cursor-pointer">Return to Study</button>
+          </div>
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h1 class="text-xl font-bold text-white">Reward Shop</h1>
+              <p class="text-sm text-zinc-400">Spend earned coins on real-world breaks. Rewards over 5 minutes are saved in your Inventory.</p>
+            </div>
+            <button id="btn-open-reward-modal" class="px-4 py-2.5 rounded-xl bg-panel hover:bg-panelHover border border-gold/40 text-gold-light font-semibold text-sm flex items-center justify-center gap-2 cursor-pointer"><i data-lucide="plus" class="w-4 h-4"></i> Custom Reward</button>
+          </div>
+          <div id="reward-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+        </section>
+
+        <!-- 5. MYSTERY LOOT BOXES -->
+        <section id="view-loot" class="view-section hidden space-y-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h1 class="text-xl font-bold text-white">Mystery Loot Boxes</h1>
+              <p class="text-sm text-zinc-400">Optional coin-only chests with transparent drop rates. No real money, no artificial scarcity.</p>
+            </div>
+            <label class="inline-flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-panel border border-borderSubtle text-xs text-zinc-300 cursor-pointer">
+              <input id="toggle-loot-enabled" type="checkbox" class="accent-gold w-4 h-4 cursor-pointer" />
+              <span>Enable Mystery Boxes</span>
+            </label>
+          </div>
+          <div id="loot-disabled-banner" class="hidden rpg-card rounded-2xl p-8 text-center space-y-2">
+            <p class="text-base font-semibold text-white">Randomized rewards are currently disabled</p>
+            <p class="text-sm text-zinc-400">Re-enable Mystery Loot Boxes anytime above, or spend coins directly in the Reward Shop.</p>
+          </div>
+          <div id="loot-active-area" class="grid grid-cols-1 lg:grid-cols-5 gap-5">
+            <div class="lg:col-span-3 rpg-card-gold rounded-2xl p-6 sm:p-8 flex flex-col items-center justify-center text-center space-y-5">
+              <div id="chest-visual" class="w-24 h-24 rounded-2xl bg-gradient-to-br from-rare/25 via-gold/15 to-obsidian border border-gold/40 flex items-center justify-center text-5xl shadow-xl">🧰</div>
+              <div>
+                <h2 class="text-xl font-bold text-white">Scholar's Mystery Chest</h2>
+                <p class="text-sm text-zinc-400">Cost: <span class="text-gold-light font-semibold">25 coins</span> (or 1 Free Box Token)</p>
+              </div>
+              <div id="loot-result-box" class="hidden w-full max-w-md p-4 rounded-xl bg-obsidian border border-borderSubtle space-y-1.5"></div>
+              <div class="flex flex-wrap items-center justify-center gap-3">
+                <button id="btn-open-loot" class="px-6 py-3 rounded-xl bg-gold hover:bg-gold-light text-obsidian font-bold text-sm flex items-center gap-2 cursor-pointer"><i data-lucide="sparkles" class="w-4 h-4"></i> Open Chest (25c)</button>
+                <button id="btn-open-free-loot" class="hidden px-5 py-3 rounded-xl bg-rare hover:bg-purple-400 text-white font-bold text-sm flex items-center gap-2 cursor-pointer"><i data-lucide="ticket" class="w-4 h-4"></i> Use Free Token (<span id="free-loot-count">0</span>)</button>
+              </div>
+            </div>
+            <div class="lg:col-span-2 rpg-card rounded-2xl p-5 space-y-3 text-xs">
+              <h3 class="text-sm font-semibold uppercase tracking-wider text-zinc-300 flex items-center gap-2"><i data-lucide="percent" class="w-4 h-4 text-gold"></i> Drop Probabilities</h3>
+              <div class="p-3 rounded-xl bg-obsidian border border-zinc-800"><div class="flex justify-between font-semibold text-zinc-200 mb-1"><span>Common</span><span>50%</span></div><p class="text-zinc-400">Favourite song (4m), Small snack (2m), Short break (3m)</p></div>
+              <div class="p-3 rounded-xl bg-obsidian border border-sky-500/30"><div class="flex justify-between font-semibold text-sky-300 mb-1"><span>Rare</span><span>30%</span></div><p class="text-zinc-400">Favourite chocolate (3m), Manga session (4m), +35 Bonus Coins</p></div>
+              <div class="p-3 rounded-xl bg-obsidian border border-rare/40"><div class="flex justify-between font-semibold text-purple-300 mb-1"><span>Epic</span><span>15%</span></div><p class="text-zinc-400">₹20 to savings goal, Deferred gaming session (30m)</p></div>
+              <div class="p-3 rounded-xl bg-obsidian border border-gold/40"><div class="flex justify-between font-semibold text-gold-light mb-1"><span>Legendary</span><span>5%</span></div><p class="text-zinc-400">Extended leisure session after studying (60m)</p></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 6. BATTLE PASS -->
+        <section id="view-battlepass" class="view-section hidden space-y-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h1 class="text-xl font-bold text-white">Daily Study Battle Pass</h1>
+              <p class="text-sm text-zinc-400">Daily milestones reset each day—lifetime XP, coins, and saved rewards stay permanent.</p>
+            </div>
+            <button id="btn-edit-bp" class="px-4 py-2 rounded-xl bg-panel hover:bg-panelHover border border-borderSubtle text-zinc-200 text-xs font-semibold flex items-center gap-2 cursor-pointer"><i data-lucide="sliders-horizontal" class="w-4 h-4"></i> Customize Track</button>
+          </div>
+          <div class="rpg-card-gold rounded-2xl p-5 space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div><span class="text-xs uppercase tracking-widest text-gold font-semibold">Today's Battle Pass XP</span><div class="text-2xl font-extrabold text-white"><span id="bp-today-xp">0</span> XP</div></div>
+              <div class="text-right text-xs text-zinc-400"><div>Max Tier: <span id="bp-max-xp" class="text-white font-semibold">2,000 XP</span></div><div>Resets daily</div></div>
+            </div>
+            <div class="h-3 w-full bg-obsidian rounded-full overflow-hidden border border-zinc-800"><div id="bp-progress-bar" class="h-full xp-shimmer rounded-full" style="width: 0%"></div></div>
+          </div>
+          <div id="bp-track" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+        </section>
+
+        <!-- 6B. MY REWARDS -->
+        <section id="view-myrewards" class="view-section hidden space-y-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h1 class="text-xl font-bold text-white">My Rewards</h1>
+              <p class="text-sm text-zinc-400">See every reward you've unlocked, start a break timer, or mark them as redeemed after you spend them.</p>
+            </div>
+            <button data-goto="shop" class="px-4 py-2 rounded-xl bg-panel hover:bg-panelHover border border-gold/40 text-gold-light text-xs font-semibold cursor-pointer">Browse Reward Shop →</button>
+          </div>
+
+          <div class="rpg-card-gold rounded-2xl p-5 space-y-3">
+            <div class="flex items-center justify-between">
+              <h2 class="text-sm font-semibold uppercase tracking-wider text-gold-light flex items-center gap-2"><i data-lucide="gift" class="w-4 h-4"></i> Available Rewards</h2>
+              <span id="myrewards-avail-count" class="text-xs text-zinc-400">0 available</span>
+            </div>
+            <div id="myrewards-available-list" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+          </div>
+
+          <div class="rpg-card rounded-2xl p-5 space-y-3">
+            <div class="flex items-center justify-between">
+              <h2 class="text-sm font-semibold uppercase tracking-wider text-zinc-300 flex items-center gap-2"><i data-lucide="check-check" class="w-4 h-4 text-emeraldQuest"></i> Redeemed History</h2>
+              <button id="btn-clear-redeemed" class="text-xs text-zinc-400 hover:text-red-400 cursor-pointer">Clear History</button>
+            </div>
+            <div id="myrewards-redeemed-list" class="space-y-2 max-h-80 overflow-y-auto"></div>
+          </div>
+        </section>
+
+        <!-- 7. INVENTORY -->
+        <section id="view-inventory" class="view-section hidden space-y-6">
+          <div>
+            <h1 class="text-xl font-bold text-white">Inventory & Ledger</h1>
+            <p class="text-sm text-zinc-400">Claim saved rewards after studying, check your tokens, and review your transaction history.</p>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="rpg-card rounded-2xl p-4"><div class="text-xs text-zinc-400">Free Loot Tokens</div><div id="inv-tokens" class="text-2xl font-bold text-purple-300 mt-1">0</div></div>
+            <div class="rpg-card rounded-2xl p-4"><div class="text-xs text-zinc-400">Saved Deferred Rewards</div><div id="inv-deferred-count" class="text-2xl font-bold text-gold-light mt-1">0</div></div>
+            <div class="rpg-card rounded-2xl p-4"><div class="text-xs text-zinc-400">Achievements Unlocked</div><div id="inv-ach-count" class="text-2xl font-bold text-emeraldQuest mt-1">0 / 8</div></div>
+          </div>
+          <div class="rpg-card rounded-2xl p-5 space-y-3">
+            <h2 class="text-sm font-semibold uppercase tracking-wider text-zinc-300">Deferred & Unclaimed Rewards</h2>
+            <div id="deferred-list" class="space-y-2"></div>
+          </div>
+          <div class="rpg-card rounded-2xl p-5 space-y-3">
+            <h2 class="text-sm font-semibold uppercase tracking-wider text-zinc-300">Recent XP & Coin Transactions</h2>
+            <div id="tx-history-list" class="space-y-2 max-h-72 overflow-y-auto"></div>
+          </div>
+        </section>
+
+        <!-- 8. ACHIEVEMENTS -->
+        <section id="view-achievements" class="view-section hidden space-y-6">
+          <div>
+            <h1 class="text-xl font-bold text-white">Achievements</h1>
+            <p class="text-sm text-zinc-400">Milestones that celebrate your consistency without punishing missed days.</p>
+          </div>
+          <div id="achievements-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"></div>
+        </section>
+
+        <!-- 9. ANALYTICS -->
+        <section id="view-analytics" class="view-section hidden space-y-6">
+          <div>
+            <h1 class="text-xl font-bold text-white">Study Analytics</h1>
+            <p class="text-sm text-zinc-400">Track your study duration, subject distribution, XP growth, and 28-day activity.</p>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="rpg-card rounded-xl p-4"><div class="text-xs text-zinc-400">Total Quests Completed</div><div id="ana-quests-done" class="text-2xl font-bold text-white mt-1">0</div></div>
+            <div class="rpg-card rounded-xl p-4"><div class="text-xs text-zinc-400">Avg. Quest Time</div><div id="ana-avg-time" class="text-2xl font-bold text-gold-light mt-1">0m</div></div>
+            <div class="rpg-card rounded-xl p-4"><div class="text-xs text-zinc-400">Total Study Hours</div><div id="ana-total-hours" class="text-2xl font-bold text-emeraldQuest mt-1">0.0h</div></div>
+          </div>
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            <div class="rpg-card rounded-2xl p-5 space-y-3">
+              <h2 class="text-sm font-semibold text-zinc-300">Daily Study Minutes (Last 7 Days)</h2>
+              <div class="relative h-72"><canvas id="chart-daily-study"></canvas></div>
+            </div>
+            <div class="rpg-card rounded-2xl p-5 space-y-3">
+              <h2 class="text-sm font-semibold text-zinc-300">Subject Distribution (Completed Quests)</h2>
+              <div class="relative h-72"><canvas id="chart-subjects"></canvas></div>
+            </div>
+          </div>
+          <div class="rpg-card rounded-2xl p-5 space-y-3">
+            <h2 class="text-sm font-semibold text-zinc-300">28-Day Activity Heatmap</h2>
+            <div id="activity-heatmap" class="grid grid-cols-7 sm:grid-cols-14 gap-2"></div>
+          </div>
+        </section>
+
+        <!-- 10. SETTINGS -->
+        <section id="view-settings" class="view-section hidden space-y-6">
+          <div>
+            <h1 class="text-xl font-bold text-white">Settings & Data</h1>
+            <p class="text-sm text-zinc-400">Customize your RPG rules, accessibility, and export or import your local save.</p>
+          </div>
+          <form id="settings-form" class="rpg-card rounded-2xl p-6 space-y-4 max-w-2xl">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div><label class="block text-xs text-zinc-400 mb-1">Player Username</label><input id="set-username" class="w-full bg-obsidian border border-borderSubtle rounded-lg px-3 py-2 text-sm text-white" /></div>
+              <div><label class="block text-xs text-zinc-400 mb-1">Daily Study Goal (minutes)</label><input id="set-daily-goal" type="number" min="10" max="600" class="w-full bg-obsidian border border-borderSubtle rounded-lg px-3 py-2 text-sm text-white" /></div>
+              <div><label class="block text-xs text-zinc-400 mb-1">XP Multiplier</label><input id="set-xp-mult" type="number" step="0.1" min="0.5" max="5" class="w-full bg-obsidian border border-borderSubtle rounded-lg px-3 py-2 text-sm text-white" /></div>
+              <div>
+                <label class="block text-xs text-zinc-400 mb-1">Default Focus Timer</label>
+                <select id="set-default-timer" class="w-full bg-obsidian border border-borderSubtle rounded-lg px-3 py-2 text-sm text-white">
+                  <option value="pomodoro">Pomodoro (25m)</option>
+                  <option value="countdown">Quest Estimate</option>
+                  <option value="stopwatch">Stopwatch</option>
+                  <option value="untimed">Topic-Based</option>
+                </select>
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-5 pt-2">
+              <label class="inline-flex items-center gap-2 text-sm text-zinc-300 cursor-pointer"><input id="set-sounds" type="checkbox" class="accent-gold w-4 h-4" /> Notification Sounds</label>
+              <label class="inline-flex items-center gap-2 text-sm text-zinc-300 cursor-pointer"><input id="set-reduced-motion" type="checkbox" class="accent-gold w-4 h-4" /> Reduced Motion</label>
+            </div>
+            <button type="submit" class="px-5 py-2.5 rounded-xl bg-gold hover:bg-gold-light text-obsidian font-bold text-sm cursor-pointer">Save Settings</button>
+          </form>
+
+          <div class="rpg-card rounded-2xl p-6 space-y-4 max-w-2xl">
+            <h2 class="text-sm font-semibold uppercase tracking-wider text-zinc-300">Backup & Profile Reset</h2>
+            <div class="flex flex-wrap gap-3">
+              <button id="btn-export-json" class="px-4 py-2 rounded-xl bg-panel hover:bg-panelHover border border-borderSubtle text-sm text-white cursor-pointer">Export JSON Backup</button>
+              <label class="px-4 py-2 rounded-xl bg-panel hover:bg-panelHover border border-borderSubtle text-sm text-white cursor-pointer">
+                Import JSON Backup
+                <input id="input-import-json" type="file" accept=".json" class="hidden" />
+              </label>
+              <button id="btn-open-reset-modal" class="px-4 py-2 rounded-xl bg-red-950/60 hover:bg-red-900/70 border border-red-700/50 text-sm text-red-300 cursor-pointer">Reset Profile</button>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- Quest Modal (Create & Edit) -->
+  <div id="quest-modal" class="fixed inset-0 z-50 hidden bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="rpg-card rounded-2xl max-w-lg w-full p-6 space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 id="quest-modal-title" class="text-lg font-bold text-white">Create New Quest</h3>
+        <button id="btn-close-quest-modal" class="text-zinc-400 hover:text-white cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <form id="quest-form" class="space-y-3">
+        <input type="hidden" id="q-id" />
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div><label class="block text-xs text-zinc-400 mb-1">Subject</label><input id="q-subject" required placeholder="e.g. Biology" class="w-full bg-obsidian border border-borderSubtle rounded-lg px-3 py-2 text-sm text-white" /></div>
+          <div><label class="block text-xs text-zinc-400 mb-1">Topic Name</label><input id="q-topic" required placeholder="e.g. Cellular Respiration" class="w-full bg-obsidian border border-borderSubtle rounded-lg px-3 py-2 text-sm text-white" /></div>
+        </div>
+        <div><label class="block text-xs text-zinc-400 mb-1">Objective / Description</label><textarea id="q-desc" rows="2" class="w-full bg-obsidian border border-borderSubtle rounded-lg px-3 py-2 text-sm text-white"></textarea></div>
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="block text-xs text-zinc-400 mb-1">Difficulty</label>
+            <select id="q-difficulty" class="w-full bg-obsidian border border-borderSubtle rounded-lg px-3 py-2 text-sm text-white">
+              <option value="Easy">Easy (50 XP / 10c)</option>
+              <option value="Medium" selected>Medium (100 XP / 20c)</option>
+              <option value="Hard">Hard (200 XP / 40c)</option>
+              <option value="Boss Quest">Boss Quest (500 XP / 100c)</option>
+            </select>
+          </div>
+          <div><label class="block text-xs text-zinc-400 mb-1">Est. Minutes</label><input id="q-minutes" type="number" min="5" max="240" value="25" class="w-full bg-obsidian border border-borderSubtle rounded-lg px-3 py-2 text-sm text-white" /></div>
+          <div class="col-span-2 sm:col-span-1">
+            <label class="block text-xs text-zinc-400 mb-1">Priority</label>
+            <select id="q-priority" class="w-full bg-obsidian border border-borderSubtle rounded-lg px-3 py-2 text-sm text-white">
+              <option value="Normal">Normal</option>
+              <option value="High">High</option>
+              <option value="Urgent">Urgent</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="block text-xs text-zinc-400 mb-1">Custom XP (optional)</label><input id="q-custom-xp" type="number" min="10" placeholder="Auto by difficulty" class="w-full bg-obsidian border border-borderSubtle rounded-lg px-3 py-2 text-sm text-white" /></div>
+          <div><label class="block text-xs text-zinc-400 mb-1">Deadline (optional)</label><input id="q-deadline" type="date" class="w-full bg-obsidian border border-borderSubtle rounded-lg px-3 py-2 text-sm text-white" /></div>
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" id="btn-cancel-quest" class="px-4 py-2 rounded-lg bg-panel border border-borderSubtle text-sm text-zinc-300 cursor-pointer">Cancel</button>
+          <button type="submit" class="px-5 py-2 rounded-lg bg-gold hover:bg-gold-light text-obsidian font-bold text-sm cursor-pointer">Save Quest</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Custom Reward Modal -->
+  <div id="reward-modal" class="fixed inset-0 z-50 hidden bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="rpg-card rounded-2xl max-w-md w-full p-6 space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-bold text-white">Add Custom Reward</h3>
+        <button id="btn-close-reward-modal" class="text-zinc-400 hover:text-white cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <form id="reward-form" class="space-y-3">
+        <div><label class="block text-xs text-zinc-400 mb-1">Reward Name</label><input id="r-name" required class="w-full bg-obsidian border border-borderSubtle rounded-lg px-3 py-2 text-sm text-white" /></div>
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="block text-xs text-zinc-400 mb-1">Coin Cost</label><input id="r-cost" type="number" min="1" value="25" required class="w-full bg-obsidian border border-borderSubtle rounded-lg px-3 py-2 text-sm text-white" /></div>
+          <div><label class="block text-xs text-zinc-400 mb-1">Duration (mins, 0 = Instant)</label><input id="r-duration" type="number" min="0" value="4" required class="w-full bg-obsidian border border-borderSubtle rounded-lg px-3 py-2 text-sm text-white" /></div>
+        </div>
+        <div><label class="block text-xs text-zinc-400 mb-1">Icon Emoji</label><input id="r-icon" value="🎁" maxlength="4" class="w-full bg-obsidian border border-borderSubtle rounded-lg px-3 py-2 text-sm text-white" /></div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" id="btn-cancel-reward" class="px-4 py-2 rounded-lg bg-panel border border-borderSubtle text-sm text-zinc-300 cursor-pointer">Cancel</button>
+          <button type="submit" class="px-5 py-2 rounded-lg bg-gold hover:bg-gold-light text-obsidian font-bold text-sm cursor-pointer">Add Reward</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Battle Pass Customize Modal -->
+  <div id="bp-modal" class="fixed inset-0 z-50 hidden bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="rpg-card rounded-2xl max-w-lg w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-bold text-white">Customize Battle Pass Milestones</h3>
+        <button id="btn-close-bp-modal" class="text-zinc-400 hover:text-white cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <form id="bp-form" class="space-y-3">
+        <div id="bp-edit-rows" class="space-y-2.5"></div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" id="btn-cancel-bp" class="px-4 py-2 rounded-lg bg-panel border border-borderSubtle text-sm text-zinc-300 cursor-pointer">Cancel</button>
+          <button type="submit" class="px-5 py-2 rounded-lg bg-gold hover:bg-gold-light text-obsidian font-bold text-sm cursor-pointer">Save Milestones</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Reset Confirmation Modal -->
+  <div id="reset-modal" class="fixed inset-0 z-50 hidden bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="rpg-card rounded-2xl max-w-md w-full p-6 space-y-4">
+      <h3 class="text-lg font-bold text-red-300">Reset All Progress?</h3>
+      <p class="text-sm text-zinc-400">This will permanently clear your XP, level, coins, quests, and achievements on this device.</p>
+      <div class="flex justify-end gap-2">
+        <button id="btn-cancel-reset" class="px-4 py-2 rounded-lg bg-panel border border-borderSubtle text-sm text-zinc-300 cursor-pointer">Cancel</button>
+        <button id="btn-confirm-reset" class="px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white font-bold text-sm cursor-pointer">Yes, Reset Everything</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="fixed bottom-5 right-5 z-50 hidden max-w-sm rpg-card-gold rounded-xl px-4 py-3 text-sm text-white shadow-2xl"></div>
+
+  <script>
+    const STORAGE_KEY = 'questmode_complete_v1';
+    const DIFFICULTY_REWARDS = {
+      Easy: { xp: 50, coins: 10 },
+      Medium: { xp: 100, coins: 20 },
+      Hard: { xp: 200, coins: 40 },
+      'Boss Quest': { xp: 500, coins: 100 },
+    };
+    const RANKS = [
+      { min: 50, name: 'Legend' },
+      { min: 30, name: 'Master' },
+      { min: 20, name: 'Elite' },
+      { min: 10, name: 'Warrior' },
+      { min: 5, name: 'Apprentice' },
+      { min: 1, name: 'Novice' },
+    ];
+    const ACHIEVEMENT_DEFS = [
+      { id: 'first_blood', name: 'First Blood', desc: 'Complete your first quest.', icon: '⚔️' },
+      { id: 'on_fire', name: 'On Fire', desc: 'Complete 5 quests in a single day.', icon: '🔥' },
+      { id: 'deep_focus', name: 'Deep Focus', desc: 'Study continuously for 60 minutes in one session.', icon: '🧠' },
+      { id: 'boss_slayer', name: 'Boss Slayer', desc: 'Complete a Boss Quest.', icon: '🐉' },
+      { id: 'academic_weapon', name: 'Academic Weapon', desc: 'Complete 100 quests total.', icon: '🛡️' },
+      { id: 'unbroken', name: 'The Unbroken', desc: 'Maintain a 7-day study streak.', icon: '⛓️' },
+      { id: 'scholar_century', name: 'Scholar of the Century', desc: 'Complete 100 hours of studying.', icon: '👑' },
+      { id: 'discipline', name: 'Discipline Over Dopamine', desc: 'Finish a study session without opening social media.', icon: '💎' },
+    ];
+    const DEFAULT_QUESTS = [
+      { id: 'q1', subject: 'Mathematics', topic: 'Quadratic Equations Practice', description: 'Solve 12 problems and verify roots.', estimatedMinutes: 25, difficulty: 'Medium', priority: 'High', status: 'pending', xp: 100, coins: 20, rewarded: false, deadline: '' },
+      { id: 'q2', subject: 'Biology', topic: 'Cell Membrane Transport', description: 'Review diffusion, osmosis, and active transport.', estimatedMinutes: 15, difficulty: 'Easy', priority: 'Normal', status: 'pending', xp: 50, coins: 10, rewarded: false, deadline: '' },
+      { id: 'q3', subject: 'Computer Science', topic: 'Unit 2 Boss: Trees & Graphs', description: 'Complete BFS/DFS implementation and 3 exam problems.', estimatedMinutes: 50, difficulty: 'Boss Quest', priority: 'Urgent', status: 'pending', xp: 500, coins: 100, rewarded: false, deadline: '' },
+    ];
+    const DEFAULT_REWARDS = [
+      { id: 'r1', name: 'Favourite song', icon: '🎧', cost: 10, duration: 4 },
+      { id: 'r2', name: 'Favourite snack', icon: '🍪', cost: 15, duration: 2 },
+      { id: 'r3', name: 'Refreshing drink', icon: '🧋', cost: 15, duration: 3 },
+      { id: 'r4', name: 'Read manga', icon: '📖', cost: 20, duration: 4 },
+      { id: 'r5', name: 'Build a LEGO section', icon: '🧱', cost: 20, duration: 4 },
+      { id: 'r6', name: 'Add ₹10 to savings fund', icon: '💰', cost: 30, duration: 0 },
+      { id: 'r7', name: 'Gaming session', icon: '🎮', cost: 150, duration: 30 },
+      { id: 'r8', name: 'Watch a movie', icon: '🎬', cost: 500, duration: 120 },
+    ];
+    const DEFAULT_BATTLE_PASS = [
+      { id: 'bp1', xpRequired: 100, reward: 'Favourite song', icon: '🎧', duration: 4, claimed: false },
+      { id: 'bp2', xpRequired: 200, reward: 'Favourite snack', icon: '🍪', duration: 2, claimed: false },
+      { id: 'bp3', xpRequired: 300, reward: 'Mystery reward (Free Box Token)', icon: '🎁', duration: 0, isLootToken: true, claimed: false },
+      { id: 'bp4', xpRequired: 500, reward: 'Extended break', icon: '☕', duration: 10, claimed: false },
+      { id: 'bp5', xpRequired: 1000, reward: 'Gaming session after studying', icon: '🎮', duration: 30, claimed: false },
+      { id: 'bp6', xpRequired: 2000, reward: 'Custom major reward', icon: '🏆', duration: 60, claimed: false },
+    ];
+    const LOOT_POOL = [
+      { rarity: 'Common', weight: 50, color: 'text-zinc-200 border-zinc-700', items: [{ name: 'Favourite song', icon: '🎧', duration: 4 }, { name: 'Small snack', icon: '🥨', duration: 2 }, { name: 'Short relaxation break', icon: '🌿', duration: 3 }] },
+      { rarity: 'Rare', weight: 30, color: 'text-sky-300 border-sky-500/40', items: [{ name: 'Favourite chocolate', icon: '🍫', duration: 3 }, { name: 'Manga reading session', icon: '📖', duration: 4 }, { name: '+35 Bonus Coins', icon: '🪙', duration: 0, bonusCoins: 35 }] },
+      { rarity: 'Epic', weight: 15, color: 'text-purple-300 border-rare/50', items: [{ name: '₹20 towards savings goal', icon: '💰', duration: 0 }, { name: 'Deferred gaming session', icon: '🎮', duration: 30 }] },
+      { rarity: 'Legendary', weight: 5, color: 'text-gold-light border-gold/60', items: [{ name: 'Extended leisure session after studying', icon: '👑', duration: 60 }] },
+    ];
+
+    function getTodayStr() { return new Date().toISOString().slice(0, 10); }
+    function getDefaultState() {
+      return {
+        profile: { username: 'Scholar', xp: 0, todayXp: 0, coins: 30, freeLootTokens: 0, lootEnabled: true, streak: 1, lastStudyDate: getTodayStr(), totalStudySeconds: 0, todayStudySeconds: 0, todayCompleted: 0, totalCompleted: 0, todayDate: getTodayStr() },
+        settings: { dailyGoalMinutes: 60, xpMultiplier: 1.0, soundsEnabled: true, reducedMotion: false, defaultTimer: 'pomodoro' },
+        quests: JSON.parse(JSON.stringify(DEFAULT_QUESTS)),
+        rewards: JSON.parse(JSON.stringify(DEFAULT_REWARDS)),
+        battlePass: JSON.parse(JSON.stringify(DEFAULT_BATTLE_PASS)),
+        deferredRewards: [],
+        redeemedRewards: [],
+        unlockedAchievements: [],
+        transactions: [],
+        dailyLog: {},
+        activeQuestId: 'q1',
+        timer: { mode: 'pomodoro', running: false, startedAt: null, accumulatedSeconds: 0, targetSeconds: 25 * 60 },
+        breakTimer: { active: false, rewardName: '', endsAt: null },
+      };
+    }
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('questmode_step2_v1');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          const def = getDefaultState();
+          return {
+            ...def,
+            ...parsed,
+            profile: { ...def.profile, ...(parsed.profile || {}) },
+            settings: { ...def.settings, ...(parsed.settings || {}) },
+            timer: { ...def.timer, ...(parsed.timer || {}) },
+            breakTimer: { ...def.breakTimer, ...(parsed.breakTimer || {}) },
+          };
+        }
+      } catch (e) {}
+      return getDefaultState();
+    }
+
+    let state = loadState();
+    if (!Array.isArray(state.redeemedRewards)) state.redeemedRewards = [];
+    if (state.profile.todayDate !== getTodayStr()) {
+      state.profile.todayDate = getTodayStr();
+      state.profile.todayCompleted = 0;
+      state.profile.todayXp = 0;
+      state.profile.todayStudySeconds = 0;
+      state.battlePass = state.battlePass.map((m) => ({ ...m, claimed: false }));
+    }
+
+    let activeTab = 'dashboard';
+    let sidebarCollapsed = false;
+    let ambientNode = null;
+    let ambientCtx = null;
+    let dailyChart = null;
+    let subjectChart = null;
+
+    function saveState() {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+    }
+
+    function xpForLevel(level) { return 100 + (level - 1) * 50; }
+    function computeLevelInfo(totalXp) {
+      let level = 1, remaining = totalXp;
+      while (remaining >= xpForLevel(level)) { remaining -= xpForLevel(level); level++; }
+      const rankObj = RANKS.find((r) => level >= r.min) || RANKS[RANKS.length - 1];
+      return { level, rank: rankObj.name, currentXp: remaining, neededXp: xpForLevel(level), pct: Math.min(100, Math.round((remaining / xpForLevel(level)) * 100)) };
+    }
+
+    function playChime() {
+      if (!state.settings.soundsEnabled) return;
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const now = ctx.currentTime;
+        [523.25, 659.25, 783.99].forEach((freq, idx) => {
+          const osc = ctx.createOscillator(), gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+          gain.gain.setValueAtTime(0.001, now + idx * 0.08);
+          gain.gain.exponentialRampToValueAtTime(0.14, now + idx * 0.08 + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.4);
+          osc.connect(gain); gain.connect(ctx.destination);
+          osc.start(now + idx * 0.08); osc.stop(now + idx * 0.08 + 0.42);
+        });
+      } catch (e) {}
+    }
+
+    function toggleAmbientSound() {
+      const btn = document.getElementById('btn-ambient-toggle');
+      if (ambientNode) {
+        try { ambientNode.stop(); ambientCtx.close(); } catch (e) {}
+        ambientNode = null; ambientCtx = null;
+        btn.innerHTML = '<i data-lucide="volume-x" class="w-3.5 h-3.5"></i> <span>Ambient: Off</span>';
+        if (window.lucide) window.lucide.createIcons();
+        return;
+      }
+      try {
+        ambientCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const bufSize = 2 * ambientCtx.sampleRate;
+        const buf = ambientCtx.createBuffer(1, bufSize, ambientCtx.sampleRate);
+        const out = buf.getChannelData(0);
+        let lastOut = 0;
+        for (let i = 0; i < bufSize; i++) {
+          const white = Math.random() * 2 - 1;
+          out[i] = (lastOut + 0.02 * white) / 1.02;
+          lastOut = out[i];
+          out[i] *= 0.25;
+        }
+        ambientNode = ambientCtx.createBufferSource();
+        ambientNode.buffer = buf;
+        ambientNode.loop = true;
+        ambientNode.connect(ambientCtx.destination);
+        ambientNode.start(0);
+        btn.innerHTML = '<i data-lucide="volume-2" class="w-3.5 h-3.5 text-gold"></i> <span class="text-gold-light">Rain: On</span>';
+        if (window.lucide) window.lucide.createIcons();
+      } catch (e) {}
+    }
+
+    function showToast(msg) {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.classList.remove('hidden');
+      clearTimeout(el._t);
+      el._t = setTimeout(() => el.classList.add('hidden'), 3600);
+    }
+
+    function formatTime(totalSecs) {
+      const s = Math.max(0, Math.floor(totalSecs));
+      return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+    }
+
+    function logTransaction(label, xpDelta, coinDelta) {
+      state.transactions.unshift({ label, xpDelta, coinDelta, ts: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) });
+      if (state.transactions.length > 50) state.transactions.pop();
+    }
+
+    function checkAchievements(sessionSeconds, stayedOffSocial) {
+      const unlock = (id) => {
+        if (!state.unlockedAchievements.includes(id)) {
+          state.unlockedAchievements.push(id);
+          const def = ACHIEVEMENT_DEFS.find((a) => a.id === id);
+          if (def) showToast(`Achievement Unlocked: ${def.icon} ${def.name}!`);
+        }
+      };
+      if (state.profile.totalCompleted >= 1) unlock('first_blood');
+      if (state.profile.todayCompleted >= 5) unlock('on_fire');
+      if (sessionSeconds >= 3600) unlock('deep_focus');
+      if (state.quests.some((q) => q.status === 'completed' && q.difficulty === 'Boss Quest')) unlock('boss_slayer');
+      if (state.profile.totalCompleted >= 100) unlock('academic_weapon');
+      if (state.profile.streak >= 7) unlock('unbroken');
+      if (state.profile.totalStudySeconds >= 360000) unlock('scholar_century');
+      if (stayedOffSocial) unlock('discipline');
+    }
+
+    function switchTab(tab) {
+      activeTab = tab;
+      document.querySelectorAll('.view-section').forEach((s) => s.classList.add('hidden'));
+      document.getElementById('view-' + tab).classList.remove('hidden');
+      document.querySelectorAll('.nav-btn').forEach((btn) => {
+        const isActive = btn.dataset.tab === tab;
+        if (btn.closest('#sidebar-nav')) {
+          btn.className = isActive
+            ? 'nav-btn w-full px-3 py-2.5 rounded-xl text-sm font-semibold transition flex items-center gap-3 cursor-pointer bg-gold/15 text-gold-light border border-gold/30'
+            : 'nav-btn w-full px-3 py-2.5 rounded-xl text-sm font-medium transition flex items-center gap-3 cursor-pointer text-zinc-400 hover:text-white hover:bg-obsidian';
+        } else {
+          btn.className = isActive
+            ? 'nav-btn px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap bg-gold/15 text-gold-light border border-gold/30 cursor-pointer'
+            : 'nav-btn px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap text-zinc-400 hover:text-white cursor-pointer';
+        }
+      });
+      const hideNav = tab === 'focus' && state.timer.running;
+      document.getElementById('main-nav').classList.toggle('hidden', hideNav);
+      document.getElementById('desktop-sidebar').classList.toggle('md:hidden', hideNav);
+      renderAll();
+    }
+
+    function getActiveQuest() {
+      return state.quests.find((q) => q.id === state.activeQuestId && q.status === 'pending')
+        || state.quests.find((q) => q.status === 'pending')
+        || null;
+    }
+
+    function renderHUD() {
+      const info = computeLevelInfo(state.profile.xp);
+      document.getElementById('hud-level').textContent = 'Lv ' + info.level;
+      document.getElementById('hud-rank').textContent = '· ' + info.rank;
+      document.getElementById('hud-coins').textContent = state.profile.coins;
+      document.getElementById('hud-streak').textContent = state.profile.streak + 'd';
+      const todayMins = Math.round((state.profile.todayStudySeconds || 0) / 60);
+      document.getElementById('hud-goal-summary').textContent = `Daily Goal: ${todayMins} / ${state.settings.dailyGoalMinutes}m`;
+      document.body.classList.toggle('reduced-motion', !!state.settings.reducedMotion);
+    }
+
+    function renderDashboard() {
+      const info = computeLevelInfo(state.profile.xp);
+      document.getElementById('dash-username').textContent = state.profile.username;
+      document.getElementById('dash-rank-badge').textContent = info.rank;
+      document.getElementById('dash-level').textContent = info.level;
+      document.getElementById('dash-total-xp').textContent = state.profile.xp;
+      document.getElementById('dash-xp-text').textContent = `${info.currentXp} / ${info.neededXp} XP`;
+      document.getElementById('dash-xp-bar').style.width = info.pct + '%';
+      document.getElementById('stat-coins').textContent = state.profile.coins;
+      document.getElementById('stat-today-quests').textContent = state.profile.todayCompleted;
+      const todayMins = Math.round((state.profile.todayStudySeconds || 0) / 60);
+      const goalPct = Math.min(100, Math.round((todayMins / Math.max(1, state.settings.dailyGoalMinutes)) * 100));
+      document.getElementById('stat-daily-goal-pct').textContent = `${goalPct}% of daily goal`;
+      document.getElementById('stat-study-time').textContent = Math.round(state.profile.totalStudySeconds / 60) + 'm';
+      document.getElementById('stat-streak').textContent = state.profile.streak + (state.profile.streak === 1 ? ' day' : ' days');
+
+      const activeQ = getActiveQuest();
+      const activeBox = document.getElementById('dash-active-quest');
+      activeBox.innerHTML = activeQ ? `
+        <div class="p-4 rounded-xl bg-obsidian border border-borderSubtle space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <span class="text-xs font-medium px-2.5 py-0.5 rounded-full bg-zinc-800 text-zinc-300">${activeQ.subject}</span>
+            <span class="text-xs font-semibold text-gold-light">+${activeQ.xp} XP · +${activeQ.coins} Coins</span>
+          </div>
+          <div>
+            <h3 class="text-lg font-bold text-white">${activeQ.topic}</h3>
+            <p class="text-sm text-zinc-400 mt-1">${activeQ.description || 'Complete this topic to earn your bounty.'}</p>
+          </div>
+          <div class="flex flex-wrap items-center justify-between gap-2 pt-1 text-xs text-zinc-400">
+            <span>${activeQ.difficulty} · ~${activeQ.estimatedMinutes} min${activeQ.deadline ? ' · Due ' + activeQ.deadline : ''}</span>
+            <button onclick="startFocusOnQuest('${activeQ.id}')" class="px-3.5 py-1.5 rounded-lg bg-gold/15 hover:bg-gold/25 text-gold-light border border-gold/30 font-semibold cursor-pointer">Focus Now →</button>
+          </div>
+        </div>` : `<div class="p-6 rounded-xl bg-obsidian border border-dashed border-borderSubtle text-center text-sm text-zinc-400">All quests completed! Add a new quest in Quest Manager.</div>`;
+
+      document.getElementById('dash-upcoming-rewards').innerHTML = state.rewards.slice(0, 4).map((r) => `
+        <div class="flex items-center justify-between p-2.5 rounded-xl bg-obsidian border border-borderSubtle">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <span class="text-lg">${r.icon}</span>
+            <div class="truncate"><div class="text-sm font-medium text-white truncate">${r.name}</div><div class="text-xs text-zinc-500">${r.duration > 0 ? r.duration + ' min' : 'Instant'}</div></div>
+          </div>
+          <span class="text-xs font-semibold px-2 py-1 rounded-md ${state.profile.coins >= r.cost ? 'bg-emeraldQuest/15 text-emeraldQuest' : 'bg-zinc-800 text-zinc-400'}">${r.cost}c</span>
+        </div>`).join('');
+    }
+
+    function renderQuests() {
+      const subjectSelect = document.getElementById('filter-subject');
+      const currentSub = subjectSelect.value;
+      const subjects = [...new Set(state.quests.map((q) => q.subject))];
+      subjectSelect.innerHTML = '<option value="all">All Subjects</option>' + subjects.map((s) => `<option value="${s}" ${s === currentSub ? 'selected' : ''}>${s}</option>`).join('');
+      const subFilter = subjectSelect.value;
+      const statusFilter = document.getElementById('filter-status').value;
+      const filtered = state.quests.filter((q) => (subFilter === 'all' || q.subject === subFilter) && (statusFilter === 'all' || q.status === statusFilter));
+      const list = document.getElementById('quest-list');
+      if (filtered.length === 0) {
+        list.innerHTML = `<div class="col-span-full rpg-card rounded-2xl p-8 text-center text-sm text-zinc-400">No quests match this filter.</div>`;
+        return;
+      }
+      list.innerHTML = filtered.map((q) => {
+        const isDone = q.status === 'completed', isBoss = q.difficulty === 'Boss Quest';
+        return `
+          <div class="rpg-card rounded-2xl p-5 flex flex-col justify-between gap-4 ${isBoss ? 'border-rare/40' : ''}">
+            <div class="space-y-2">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-xs font-medium px-2.5 py-0.5 rounded-full bg-zinc-800 text-zinc-300">${q.subject}</span>
+                <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full ${isBoss ? 'bg-rare/20 text-purple-300 border border-rare/40' : 'bg-gold/10 text-gold-light'}">${q.difficulty}</span>
+              </div>
+              <h3 class="text-base font-bold ${isDone ? 'text-emeraldQuest line-through' : 'text-white'}">${q.topic}</h3>
+              <p class="text-xs text-zinc-400">${q.description || 'No description provided.'}</p>
+            </div>
+            <div class="flex items-center justify-between pt-3 border-t border-borderSubtle text-xs">
+              <div class="text-zinc-300 font-medium">+${q.xp} XP · +${q.coins}c · ${q.estimatedMinutes}m</div>
+              <div class="flex items-center gap-1.5">
+                ${!isDone ? `<button onclick="startFocusOnQuest('${q.id}')" class="px-3 py-1.5 rounded-lg bg-gold hover:bg-gold-light text-obsidian font-bold cursor-pointer">Start</button>` : `<span class="text-emeraldQuest font-semibold mr-1">Done</span>`}
+                <button onclick="openEditQuest('${q.id}')" class="p-1.5 rounded-lg bg-panel hover:bg-panelHover text-zinc-400 hover:text-white cursor-pointer" title="Edit"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+                <button onclick="deleteQuest('${q.id}')" class="p-1.5 rounded-lg bg-panel hover:bg-red-950/50 text-zinc-400 hover:text-red-400 cursor-pointer" title="Delete"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+              </div>
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    function getElapsedTimerSeconds() {
+      let elapsed = state.timer.accumulatedSeconds || 0;
+      if (state.timer.running && state.timer.startedAt) elapsed += Math.floor((Date.now() - state.timer.startedAt) / 1000);
+      return elapsed;
+    }
+
+    function renderFocus() {
+      const q = getActiveQuest();
+      document.getElementById('focus-quest-info').innerHTML = q
+        ? `<span class="text-xs px-2.5 py-0.5 rounded-full bg-zinc-800 text-zinc-300">${q.subject} · ${q.difficulty}</span><h1 class="text-2xl sm:text-3xl font-extrabold text-white pt-1">${q.topic}</h1><p class="text-sm text-zinc-400 max-w-lg mx-auto">${q.description || 'Stay focused.'}</p>`
+        : `<h1 class="text-2xl font-bold text-white">No Active Quest</h1><p class="text-sm text-zinc-400">Create a quest in Quest Manager first.</p>`;
+      document.querySelectorAll('.timer-mode-btn').forEach((btn) => {
+        const active = btn.dataset.timerMode === state.timer.mode;
+        btn.className = active ? 'timer-mode-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-gold text-obsidian cursor-pointer' : 'timer-mode-btn px-3 py-1.5 rounded-lg text-xs font-medium text-zinc-400 hover:text-white cursor-pointer';
+      });
+      document.getElementById('btn-timer-toggle').innerHTML = state.timer.running ? '<i data-lucide="pause" class="w-4 h-4"></i> Pause' : '<i data-lucide="play" class="w-4 h-4 fill-current"></i> Start Timer';
+      updateTimerDisplay();
+    }
+
+    function updateTimerDisplay() {
+      const display = document.getElementById('focus-timer-display'), sub = document.getElementById('focus-timer-sub'), elapsed = getElapsedTimerSeconds();
+      if (state.timer.mode === 'untimed') { display.textContent = '∞'; sub.textContent = 'Topic-based mode'; }
+      else if (state.timer.mode === 'stopwatch') { display.textContent = formatTime(elapsed); sub.textContent = state.timer.running ? 'Focus session in progress...' : 'Stopwatch paused'; }
+      else {
+        const remaining = Math.max(0, state.timer.targetSeconds - elapsed);
+        display.textContent = formatTime(remaining);
+        sub.textContent = state.timer.running ? 'Stay locked in' : 'Timer paused';
+        if (remaining === 0 && state.timer.running) { pauseTimer(); playChime(); showToast('Focus timer finished!'); }
+      }
+    }
+
+    function renderShop() {
+      document.getElementById('reward-grid').innerHTML = state.rewards.map((r) => {
+        const canAfford = state.profile.coins >= r.cost, isDeferred = r.duration > 5;
+        return `
+          <div class="rpg-card rounded-2xl p-5 flex flex-col justify-between gap-4">
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-xl bg-obsidian border border-borderSubtle flex items-center justify-center text-2xl">${r.icon}</div>
+                <div><h3 class="font-bold text-white text-sm">${r.name}</h3><p class="text-xs text-zinc-400">${r.duration > 0 ? r.duration + ' min' : 'Instant'} · ${isDeferred ? 'Saved to Inventory' : 'Immediate break'}</p></div>
+              </div>
+              <span class="text-xs font-bold px-2.5 py-1 rounded-lg bg-gold/15 text-gold-light border border-gold/30">${r.cost}c</span>
+            </div>
+            <button onclick="redeemReward('${r.id}')" ${!canAfford ? 'disabled' : ''} class="w-full py-2.5 rounded-xl font-semibold text-sm transition ${canAfford ? 'bg-gold hover:bg-gold-light text-obsidian cursor-pointer' : 'bg-zinc-900 text-zinc-600 border border-zinc-800 cursor-not-allowed'}">
+              ${canAfford ? (isDeferred ? 'Unlock & Save' : 'Redeem & Start Break') : 'Need ' + (r.cost - state.profile.coins) + ' more coins'}
+            </button>
+          </div>`;
+      }).join('');
+      renderBreakBanner();
+    }
+
+    function renderBreakBanner() {
+      const card = document.getElementById('break-timer-card');
+      if (!state.breakTimer.active || !state.breakTimer.endsAt) { card.classList.add('hidden'); return; }
+      card.classList.remove('hidden');
+      document.getElementById('break-reward-name').textContent = state.breakTimer.rewardName;
+      const nextQ = getActiveQuest();
+      document.getElementById('break-next-quest').textContent = nextQ ? `Up Next: ${nextQ.topic}` : 'Add a new quest when you return!';
+      const secsLeft = Math.max(0, Math.ceil((state.breakTimer.endsAt - Date.now()) / 1000));
+      document.getElementById('break-countdown').textContent = formatTime(secsLeft);
+      if (secsLeft === 0) { state.breakTimer.active = false; saveState(); playChime(); showToast('Break complete!'); card.classList.add('hidden'); }
+    }
+
+    function renderLoot() {
+      const enabled = state.profile.lootEnabled;
+      document.getElementById('toggle-loot-enabled').checked = enabled;
+      document.getElementById('loot-disabled-banner').classList.toggle('hidden', enabled);
+      document.getElementById('loot-active-area').classList.toggle('hidden', !enabled);
+      const canBuy = state.profile.coins >= 25, openBtn = document.getElementById('btn-open-loot');
+      openBtn.disabled = !canBuy;
+      openBtn.className = canBuy ? 'px-6 py-3 rounded-xl bg-gold hover:bg-gold-light text-obsidian font-bold text-sm flex items-center gap-2 cursor-pointer' : 'px-6 py-3 rounded-xl bg-zinc-900 text-zinc-600 border border-zinc-800 font-bold text-sm cursor-not-allowed flex items-center gap-2';
+      const freeBtn = document.getElementById('btn-open-free-loot');
+      freeBtn.classList.toggle('hidden', state.profile.freeLootTokens < 1);
+      document.getElementById('free-loot-count').textContent = state.profile.freeLootTokens;
+    }
+
+    function renderBattlePass() {
+      const todayXp = state.profile.todayXp || 0;
+      const maxXp = Math.max(...state.battlePass.map((m) => m.xpRequired), 100);
+      document.getElementById('bp-today-xp').textContent = todayXp;
+      document.getElementById('bp-max-xp').textContent = maxXp.toLocaleString() + ' XP';
+      document.getElementById('bp-progress-bar').style.width = Math.min(100, Math.round((todayXp / maxXp) * 100)) + '%';
+      document.getElementById('bp-track').innerHTML = state.battlePass.map((m) => {
+        const unlocked = todayXp >= m.xpRequired, claimed = m.claimed;
+        const badge = claimed ? '<span class="text-xs px-2.5 py-0.5 rounded-full bg-emeraldQuest/15 text-emeraldQuest font-semibold">Claimed</span>' : unlocked ? '<span class="text-xs px-2.5 py-0.5 rounded-full bg-gold/20 text-gold-light border border-gold/40 font-semibold">Unlocked</span>' : '<span class="text-xs px-2.5 py-0.5 rounded-full bg-zinc-800 text-zinc-400">Locked</span>';
+        return `
+          <div class="rpg-card rounded-2xl p-5 flex flex-col justify-between gap-4 ${unlocked && !claimed ? 'border-gold/50' : ''}">
+            <div class="space-y-2">
+              <div class="flex items-center justify-between"><span class="text-xs font-bold text-gold-light">${m.xpRequired.toLocaleString()} XP</span>${badge}</div>
+              <div class="flex items-center gap-3 pt-1"><span class="text-2xl">${m.icon}</span><div><h3 class="font-bold text-white text-sm">${m.reward}</h3><p class="text-xs text-zinc-400">${m.isLootToken ? 'Grants 1 free Mystery Box' : m.duration > 5 ? 'Saved to Inventory' : m.duration > 0 ? m.duration + ' min break' : 'Instant reward'}</p></div></div>
+            </div>
+            <button onclick="claimBattlePass('${m.id}')" ${!unlocked || claimed ? 'disabled' : ''} class="w-full py-2 rounded-xl font-semibold text-xs ${claimed ? 'bg-emeraldQuest/10 text-emeraldQuest' : unlocked ? 'bg-gold hover:bg-gold-light text-obsidian cursor-pointer' : 'bg-zinc-900 text-zinc-600 border border-zinc-800 cursor-not-allowed'}">
+              ${claimed ? 'Claimed Today' : unlocked ? 'Claim Reward' : `Need ${(m.xpRequired - todayXp).toLocaleString()} more XP`}
+            </button>
+          </div>`;
+      }).join('');
+    }
+
+    function renderInventory() {
+      document.getElementById('inv-tokens').textContent = state.profile.freeLootTokens;
+      document.getElementById('inv-deferred-count').textContent = state.deferredRewards.length;
+      document.getElementById('inv-ach-count').textContent = `${state.unlockedAchievements.length} / ${ACHIEVEMENT_DEFS.length}`;
+      const defList = document.getElementById('deferred-list');
+      defList.innerHTML = state.deferredRewards.length === 0
+        ? `<p class="text-xs text-zinc-500">No saved rewards yet. Rewards longer than 5 minutes appear here.</p>`
+        : state.deferredRewards.map((d, idx) => `
+          <div class="flex items-center justify-between p-3 rounded-xl bg-obsidian border border-borderSubtle">
+            <div class="flex items-center gap-2.5"><span class="text-xl">${d.icon}</span><div><div class="text-sm font-semibold text-white">${d.name}</div><div class="text-xs text-zinc-500">${d.duration} min · Unlocked</div></div></div>
+            <button onclick="claimDeferred(${idx})" class="px-3 py-1.5 rounded-lg bg-emeraldQuest hover:bg-emerald-400 text-obsidian font-bold text-xs cursor-pointer">Claim Now</button>
+          </div>`).join('');
+      const txList = document.getElementById('tx-history-list');
+      txList.innerHTML = state.transactions.length === 0
+        ? `<p class="text-xs text-zinc-500">Complete a quest or redeem a reward to see your ledger.</p>`
+        : state.transactions.map((t) => `
+          <div class="flex items-center justify-between p-2.5 rounded-xl bg-obsidian border border-borderSubtle text-xs">
+            <div><span class="text-zinc-200 font-medium">${t.label}</span> <span class="text-zinc-500 ml-2">${t.ts}</span></div>
+            <div class="font-semibold">${t.xpDelta ? `<span class="text-emeraldQuest">+${t.xpDelta} XP</span> ` : ''}${t.coinDelta ? `<span class="${t.coinDelta > 0 ? 'text-gold-light' : 'text-red-400'}">${t.coinDelta > 0 ? '+' : ''}${t.coinDelta}c</span>` : ''}</div>
+          </div>`).join('');
+    }
+
+    function renderAchievements() {
+      document.getElementById('achievements-grid').innerHTML = ACHIEVEMENT_DEFS.map((a) => {
+        const unlocked = state.unlockedAchievements.includes(a.id);
+        return `
+          <div class="rpg-card rounded-2xl p-5 space-y-2 ${unlocked ? 'border-gold/50' : 'opacity-55'}">
+            <div class="flex items-center justify-between">
+              <span class="text-3xl">${a.icon}</span>
+              <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full ${unlocked ? 'bg-emeraldQuest/15 text-emeraldQuest' : 'bg-zinc-800 text-zinc-400'}">${unlocked ? 'Unlocked' : 'Locked'}</span>
+            </div>
+            <h3 class="font-bold text-white text-sm">${a.name}</h3>
+            <p class="text-xs text-zinc-400">${a.desc}</p>
+          </div>`;
+      }).join('');
+    }
+
+    function renderAnalytics() {
+      document.getElementById('ana-quests-done').textContent = state.profile.totalCompleted || 0;
+      const avgMins = state.profile.totalCompleted > 0 ? Math.round((state.profile.totalStudySeconds / 60) / state.profile.totalCompleted) : 0;
+      document.getElementById('ana-avg-time').textContent = avgMins + 'm';
+      document.getElementById('ana-total-hours').textContent = (state.profile.totalStudySeconds / 3600).toFixed(1) + 'h';
+
+      // Heatmap (last 28 days)
+      const heatmap = document.getElementById('activity-heatmap');
+      const days = [];
+      for (let i = 27; i >= 0; i--) {
+        const d = new Date(); d.setDate(d.getDate() - i);
+        const key = d.toISOString().slice(0, 10);
+        const mins = Math.round(((state.dailyLog[key] || 0) / 60));
+        days.push({ key, mins });
+      }
+      heatmap.innerHTML = days.map((d) => {
+        const bg = d.mins >= 45 ? 'bg-emeraldQuest' : d.mins >= 20 ? 'bg-emerald-600/70' : d.mins > 0 ? 'bg-emerald-900/80' : 'bg-obsidian border border-borderSubtle';
+        return `<div title="${d.key}: ${d.mins}m" class="h-7 rounded-md ${bg} flex items-center justify-center text-[10px] text-zinc-300">${d.mins > 0 ? d.mins : ''}</div>`;
+      }).join('');
+
+      if (activeTab !== 'analytics' || typeof Chart === 'undefined') return;
+      const last7 = days.slice(-7);
+      if (dailyChart) dailyChart.destroy();
+      dailyChart = new Chart(document.getElementById('chart-daily-study'), {
+        type: 'bar',
+        data: { labels: last7.map((x) => x.key.slice(5)), datasets: [{ label: 'Study Minutes', data: last7.map((x) => x.mins), backgroundColor: '#d4af37', borderRadius: 6 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: '#26262e' }, ticks: { color: '#a1a1aa' } }, x: { grid: { display: false }, ticks: { color: '#a1a1aa' } } } },
+      });
+
+      const subCounts = {};
+      state.quests.filter((q) => q.status === 'completed').forEach((q) => { subCounts[q.subject] = (subCounts[q.subject] || 0) + 1; });
+      const subLabels = Object.keys(subCounts).length ? Object.keys(subCounts) : ['No completed quests yet'];
+      const subVals = Object.keys(subCounts).length ? Object.values(subCounts) : [1];
+      if (subjectChart) subjectChart.destroy();
+      subjectChart = new Chart(document.getElementById('chart-subjects'), {
+        type: 'doughnut',
+        data: { labels: subLabels, datasets: [{ data: subVals, backgroundColor: ['#d4af37', '#10b981', '#a855f7', '#38bdf8', '#f59e0b'], borderWidth: 0 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#d4d4d8' } } } },
+      });
+    }
+
+    function renderSettings() {
+      document.getElementById('set-username').value = state.profile.username;
+      document.getElementById('set-daily-goal').value = state.settings.dailyGoalMinutes;
+      document.getElementById('set-xp-mult').value = state.settings.xpMultiplier;
+      document.getElementById('set-default-timer').value = state.settings.defaultTimer;
+      document.getElementById('set-sounds').checked = state.settings.soundsEnabled;
+      document.getElementById('set-reduced-motion').checked = state.settings.reducedMotion;
+    }
+
+    function startFocusOnQuest(id) {
+      state.activeQuestId = id;
+      state.timer.mode = state.settings.defaultTimer || 'pomodoro';
+      const q = state.quests.find((x) => x.id === id);
+      if (q && state.timer.mode === 'countdown') state.timer.targetSeconds = q.estimatedMinutes * 60;
+      saveState();
+      switchTab('focus');
+    }
+    function startTimer() { if (state.timer.running) return; state.timer.running = true; state.timer.startedAt = Date.now(); saveState(); switchTab('focus'); }
+    function pauseTimer() { if (!state.timer.running) return; state.timer.accumulatedSeconds = getElapsedTimerSeconds(); state.timer.running = false; state.timer.startedAt = null; saveState(); renderFocus(); document.getElementById('main-nav').classList.remove('hidden'); document.getElementById('desktop-sidebar').classList.remove('md:hidden'); }
+    function resetTimer() { state.timer.running = false; state.timer.startedAt = null; state.timer.accumulatedSeconds = 0; const q = getActiveQuest(); if (state.timer.mode === 'pomodoro') state.timer.targetSeconds = 25 * 60; if (state.timer.mode === 'countdown') state.timer.targetSeconds = (q ? q.estimatedMinutes : 25) * 60; saveState(); renderFocus(); document.getElementById('main-nav').classList.remove('hidden'); document.getElementById('desktop-sidebar').classList.remove('md:hidden'); }
+
+    function completeActiveQuest() {
+      const q = getActiveQuest();
+      if (!q || q.rewarded) { showToast(q ? 'Quest already rewarded!' : 'No active quest to complete.'); return; }
+      const elapsed = getElapsedTimerSeconds();
+      const stayedOffSocial = document.getElementById('chk-no-social').checked;
+      pauseTimer();
+      const prevLevel = computeLevelInfo(state.profile.xp).level;
+      const earnedXp = Math.round(q.xp * (state.settings.xpMultiplier || 1));
+      q.status = 'completed'; q.rewarded = true;
+      state.profile.xp += earnedXp; state.profile.todayXp += earnedXp; state.profile.coins += q.coins;
+      state.profile.todayCompleted += 1; state.profile.totalCompleted += 1;
+      state.profile.totalStudySeconds += elapsed; state.profile.todayStudySeconds += elapsed;
+      const todayKey = getTodayStr();
+      state.dailyLog[todayKey] = (state.dailyLog[todayKey] || 0) + elapsed;
+      state.timer.accumulatedSeconds = 0;
+      logTransaction(`Completed: ${q.topic}`, earnedXp, q.coins);
+      checkAchievements(elapsed, stayedOffSocial);
+      const newLevel = computeLevelInfo(state.profile.xp).level;
+      saveState(); playChime();
+      if (typeof confetti === 'function' && !state.settings.reducedMotion) confetti({ particleCount: newLevel > prevLevel ? 110 : 55, spread: 70, origin: { y: 0.65 } });
+      showToast(newLevel > prevLevel ? `LEVEL UP! Level ${newLevel}! (+${earnedXp} XP, +${q.coins}c)` : `Quest Complete! +${earnedXp} XP & +${q.coins} coins.`);
+      switchTab('shop');
+    }
+
+    function openEditQuest(id) {
+      const q = state.quests.find((x) => x.id === id);
+      if (!q) return;
+      document.getElementById('quest-modal-title').textContent = 'Edit Quest';
+      document.getElementById('q-id').value = q.id;
+      document.getElementById('q-subject').value = q.subject;
+      document.getElementById('q-topic').value = q.topic;
+      document.getElementById('q-desc').value = q.description || '';
+      document.getElementById('q-difficulty').value = q.difficulty;
+      document.getElementById('q-minutes').value = q.estimatedMinutes;
+      document.getElementById('q-priority').value = q.priority;
+      document.getElementById('q-custom-xp').value = q.xp;
+      document.getElementById('q-deadline').value = q.deadline || '';
+      document.getElementById('quest-modal').classList.remove('hidden');
+    }
+
+    function deleteQuest(id) { state.quests = state.quests.filter((q) => q.id !== id); saveState(); renderAll(); }
+
+    function renderMyRewards() {
+      const availEl = document.getElementById('myrewards-available-list');
+      const countEl = document.getElementById('myrewards-avail-count');
+      countEl.textContent = `${state.deferredRewards.length} available`;
+      if (state.deferredRewards.length === 0) {
+        availEl.innerHTML = `<div class="col-span-full p-6 rounded-xl bg-obsidian border border-dashed border-borderSubtle text-center text-xs text-zinc-400">No available rewards right now. Unlock rewards in the Reward Shop, Loot Boxes, or Battle Pass!</div>`;
+      } else {
+        availEl.innerHTML = state.deferredRewards.map((d, idx) => `
+          <div class="p-4 rounded-xl bg-obsidian border border-borderSubtle flex flex-col justify-between gap-3">
+            <div class="flex items-start justify-between gap-2">
+              <div class="flex items-center gap-3">
+                <span class="text-2xl">${d.icon}</span>
+                <div>
+                  <div class="font-bold text-white text-sm">${d.name}</div>
+                  <div class="text-xs text-zinc-400">${d.duration > 0 ? d.duration + ' min' : 'Instant'} · ${d.source || 'Unlocked'}</div>
+                </div>
+              </div>
+              <span class="text-[11px] px-2 py-0.5 rounded-full bg-gold/15 text-gold-light border border-gold/30">Available</span>
+            </div>
+            <div class="flex items-center gap-2 pt-1">
+              ${d.duration > 0 ? `<button onclick="startBreakFromSaved(${idx})" class="flex-1 py-2 rounded-lg bg-panel hover:bg-panelHover border border-borderSubtle text-xs font-semibold text-zinc-200 cursor-pointer">Start Break</button>` : ''}
+              <button onclick="markRewardRedeemed(${idx})" class="flex-1 py-2 rounded-lg bg-emeraldQuest hover:bg-emerald-400 text-obsidian text-xs font-bold cursor-pointer">Mark as Redeemed</button>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      const redEl = document.getElementById('myrewards-redeemed-list');
+      if (state.redeemedRewards.length === 0) {
+        redEl.innerHTML = `<p class="text-xs text-zinc-500">No redeemed rewards logged yet.</p>`;
+      } else {
+        redEl.innerHTML = state.redeemedRewards.map((r) => `
+          <div class="flex items-center justify-between p-3 rounded-xl bg-obsidian border border-borderSubtle text-xs">
+            <div class="flex items-center gap-2.5">
+              <span class="text-lg">${r.icon}</span>
+              <div>
+                <div class="font-semibold text-zinc-200">${r.name}</div>
+                <div class="text-zinc-500">Redeemed ${r.redeemedAt}</div>
+              </div>
+            </div>
+            <span class="px-2 py-0.5 rounded-full bg-emeraldQuest/15 text-emeraldQuest font-semibold">Redeemed</span>
+          </div>
+        `).join('');
+      }
+    }
+
+    function startBreakFromSaved(idx) {
+      const item = state.deferredRewards[idx];
+      if (!item || !item.duration) return;
+      state.breakTimer = { active: true, rewardName: `${item.icon} ${item.name}`, endsAt: Date.now() + item.duration * 60 * 1000 };
+      saveState(); playChime();
+      showToast(`Break timer started for "${item.name}"!`);
+      switchTab('shop');
+    }
+
+    function markRewardRedeemed(idx) {
+      const item = state.deferredRewards.splice(idx, 1)[0];
+      if (!item) return;
+      state.redeemedRewards.unshift({
+        ...item,
+        redeemedAt: new Date().toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+      });
+      if (state.redeemedRewards.length > 100) state.redeemedRewards.pop();
+      saveState(); playChime();
+      showToast(`Marked "${item.name}" as redeemed!`);
+      renderAll();
+    }
+
+    function redeemReward(id) {
+      const r = state.rewards.find((x) => x.id === id);
+      if (!r || state.profile.coins < r.cost) return;
+      state.profile.coins -= r.cost;
+      logTransaction(`Unlocked: ${r.name}`, 0, -r.cost);
+      playChime();
+      if (r.duration > 5 || r.duration === 0) {
+        state.deferredRewards.push({ ...r, source: 'Reward Shop', unlockedAt: Date.now() });
+        showToast(`Unlocked "${r.name}"! Added to My Rewards.`);
+      } else {
+        state.deferredRewards.push({ ...r, source: 'Reward Shop', unlockedAt: Date.now() });
+        state.breakTimer = { active: true, rewardName: `${r.icon} ${r.name}`, endsAt: Date.now() + r.duration * 60 * 1000 };
+        showToast(`Break started: ${r.name} (also saved in My Rewards)`);
+      }
+      saveState(); renderAll();
+    }
+
+    function claimDeferred(idx) { markRewardRedeemed(idx); }
+
+    function openLootBox(useFreeToken) {
+      if (!state.profile.lootEnabled) return;
+      if (useFreeToken) { if (state.profile.freeLootTokens < 1) return; state.profile.freeLootTokens -= 1; }
+      else { if (state.profile.coins < 25) return; state.profile.coins -= 25; logTransaction('Opened Mystery Box', 0, -25); }
+      const chest = document.getElementById('chest-visual');
+      chest.classList.remove('chest-opening'); void chest.offsetWidth; chest.classList.add('chest-opening');
+      const roll = Math.random() * 100;
+      let cumulative = 0, chosenTier = LOOT_POOL[0];
+      for (const tier of LOOT_POOL) { cumulative += tier.weight; if (roll < cumulative) { chosenTier = tier; break; } }
+      const item = chosenTier.items[Math.floor(Math.random() * chosenTier.items.length)];
+      if (item.bonusCoins) { state.profile.coins += item.bonusCoins; logTransaction('Loot Box Bonus', 0, item.bonusCoins); }
+      else if (item.duration > 5) state.deferredRewards.push({ name: item.name, icon: item.icon, duration: item.duration, unlockedAt: Date.now() });
+      else if (item.duration > 0) state.breakTimer = { active: true, rewardName: `${item.icon} ${item.name}`, endsAt: Date.now() + item.duration * 60 * 1000 };
+      saveState(); playChime();
+      if ((chosenTier.rarity === 'Epic' || chosenTier.rarity === 'Legendary') && typeof confetti === 'function' && !state.settings.reducedMotion) confetti({ particleCount: 90, spread: 70, origin: { y: 0.6 } });
+      const resBox = document.getElementById('loot-result-box');
+      resBox.className = `w-full max-w-md p-4 rounded-xl bg-obsidian border ${chosenTier.color} space-y-1`;
+      resBox.innerHTML = `<div class="text-xs uppercase tracking-widest font-bold">${chosenTier.rarity} Drop!</div><div class="text-lg font-bold text-white">${item.icon} ${item.name}</div>`;
+      resBox.classList.remove('hidden');
+      renderAll();
+    }
+
+    function claimBattlePass(id) {
+      const m = state.battlePass.find((x) => x.id === id);
+      if (!m || m.claimed || state.profile.todayXp < m.xpRequired) return;
+      m.claimed = true; playChime();
+      if (m.isLootToken) { state.profile.freeLootTokens += 1; showToast('Claimed 1 Free Mystery Box Token!'); }
+      else if (m.duration > 5) { state.deferredRewards.push({ name: m.reward, icon: m.icon, duration: m.duration, unlockedAt: Date.now() }); showToast(`Claimed "${m.reward}"! Saved to Inventory.`); }
+      else if (m.duration > 0) { state.breakTimer = { active: true, rewardName: `${m.icon} ${m.reward}`, endsAt: Date.now() + m.duration * 60 * 1000 }; showToast(`Claimed "${m.reward}"! Break timer started.`); }
+      else showToast(`Claimed "${m.reward}"!`);
+      saveState(); renderAll();
+    }
+
+    function renderAll() {
+      renderHUD(); renderDashboard(); renderQuests(); renderFocus(); renderShop(); renderLoot(); renderBattlePass(); renderMyRewards(); renderInventory(); renderAchievements(); renderAnalytics(); renderSettings();
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    // Event Listeners
+    document.querySelectorAll('.nav-btn').forEach((btn) => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
+    document.querySelectorAll('[data-goto]').forEach((btn) => btn.addEventListener('click', () => switchTab(btn.dataset.goto)));
+    document.getElementById('btn-toggle-sidebar').addEventListener('click', () => {
+      sidebarCollapsed = !sidebarCollapsed;
+      const sb = document.getElementById('desktop-sidebar');
+      sb.classList.toggle('md:w-64', !sidebarCollapsed);
+      sb.classList.toggle('md:w-16', sidebarCollapsed);
+      document.querySelectorAll('.sidebar-label').forEach((el) => el.classList.toggle('hidden', sidebarCollapsed));
+    });
+    document.getElementById('btn-start-quest-hero').addEventListener('click', () => switchTab('focus'));
+    document.getElementById('btn-exit-focus').addEventListener('click', () => { pauseTimer(); switchTab('dashboard'); });
+    document.getElementById('btn-ambient-toggle').addEventListener('click', toggleAmbientSound);
+    document.getElementById('btn-timer-toggle').addEventListener('click', () => state.timer.running ? pauseTimer() : startTimer());
+    document.getElementById('btn-timer-reset').addEventListener('click', resetTimer);
+    document.getElementById('btn-complete-quest').addEventListener('click', completeActiveQuest);
+    document.querySelectorAll('.timer-mode-btn').forEach((btn) => btn.addEventListener('click', () => { state.timer.mode = btn.dataset.timerMode; resetTimer(); }));
+    document.getElementById('filter-subject').addEventListener('change', renderQuests);
+    document.getElementById('filter-status').addEventListener('change', renderQuests);
+    document.getElementById('btn-return-study').addEventListener('click', () => { state.breakTimer.active = false; saveState(); switchTab('focus'); });
+
+    const qModal = document.getElementById('quest-modal');
+    document.getElementById('btn-open-quest-modal').addEventListener('click', () => { document.getElementById('quest-modal-title').textContent = 'Create New Quest'; document.getElementById('q-id').value = ''; document.getElementById('quest-form').reset(); qModal.classList.remove('hidden'); });
+    document.getElementById('btn-close-quest-modal').addEventListener('click', () => qModal.classList.add('hidden'));
+    document.getElementById('btn-cancel-quest').addEventListener('click', () => qModal.classList.add('hidden'));
+    document.getElementById('quest-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const editId = document.getElementById('q-id').value;
+      const diff = document.getElementById('q-difficulty').value;
+      const bounty = DIFFICULTY_REWARDS[diff];
+      const customXp = parseInt(document.getElementById('q-custom-xp').value, 10);
+      const payload = {
+        subject: document.getElementById('q-subject').value.trim(),
+        topic: document.getElementById('q-topic').value.trim(),
+        description: document.getElementById('q-desc').value.trim(),
+        difficulty: diff,
+        estimatedMinutes: parseInt(document.getElementById('q-minutes').value, 10) || 25,
+        priority: document.getElementById('q-priority').value,
+        xp: customXp > 0 ? customXp : bounty.xp,
+        coins: bounty.coins,
+        deadline: document.getElementById('q-deadline').value,
+      };
+      if (editId) {
+        const idx = state.quests.findIndex((x) => x.id === editId);
+        if (idx !== -1) state.quests[idx] = { ...state.quests[idx], ...payload };
+        showToast(`Quest updated: ${payload.topic}`);
+      } else {
+        const newQ = { id: 'q_' + Date.now(), status: 'pending', rewarded: false, ...payload };
+        state.quests.unshift(newQ);
+        state.activeQuestId = newQ.id;
+        showToast(`Quest added: ${newQ.topic}`);
+      }
+      saveState(); qModal.classList.add('hidden'); renderAll();
+    });
+
+    const rModal = document.getElementById('reward-modal');
+    document.getElementById('btn-open-reward-modal').addEventListener('click', () => rModal.classList.remove('hidden'));
+    document.getElementById('btn-close-reward-modal').addEventListener('click', () => rModal.classList.add('hidden'));
+    document.getElementById('btn-cancel-reward').addEventListener('click', () => rModal.classList.add('hidden'));
+    document.getElementById('reward-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const newR = { id: 'r_' + Date.now(), name: document.getElementById('r-name').value.trim(), cost: parseInt(document.getElementById('r-cost').value, 10) || 20, duration: parseInt(document.getElementById('r-duration').value, 10) || 0, icon: document.getElementById('r-icon').value.trim() || '🎁' };
+      state.rewards.push(newR); saveState(); e.target.reset(); rModal.classList.add('hidden'); showToast(`Reward added: ${newR.name}`); renderAll();
+    });
+
+    document.getElementById('toggle-loot-enabled').addEventListener('change', (e) => { state.profile.lootEnabled = e.target.checked; saveState(); renderLoot(); });
+    document.getElementById('btn-open-loot').addEventListener('click', () => openLootBox(false));
+    document.getElementById('btn-open-free-loot').addEventListener('click', () => openLootBox(true));
+
+    const bpModal = document.getElementById('bp-modal');
+    document.getElementById('btn-edit-bp').addEventListener('click', () => {
+      document.getElementById('bp-edit-rows').innerHTML = state.battlePass.map((m, i) => `
+        <div class="grid grid-cols-3 gap-2 items-center">
+          <input type="number" min="50" step="50" data-bp-xp="${i}" value="${m.xpRequired}" class="bg-obsidian border border-borderSubtle rounded-lg px-2.5 py-1.5 text-xs text-white" />
+          <input type="text" data-bp-name="${i}" value="${m.reward}" class="col-span-2 bg-obsidian border border-borderSubtle rounded-lg px-2.5 py-1.5 text-xs text-white" />
+        </div>`).join('');
+      bpModal.classList.remove('hidden');
+    });
+    document.getElementById('btn-close-bp-modal').addEventListener('click', () => bpModal.classList.add('hidden'));
+    document.getElementById('btn-cancel-bp').addEventListener('click', () => bpModal.classList.add('hidden'));
+    document.getElementById('bp-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      state.battlePass.forEach((m, i) => {
+        const xpEl = document.querySelector(`[data-bp-xp="${i}"]`), nameEl = document.querySelector(`[data-bp-name="${i}"]`);
+        if (xpEl) m.xpRequired = Math.max(50, parseInt(xpEl.value, 10) || m.xpRequired);
+        if (nameEl && nameEl.value.trim()) m.reward = nameEl.value.trim();
+      });
+      state.battlePass.sort((a, b) => a.xpRequired - b.xpRequired);
+      saveState(); bpModal.classList.add('hidden'); showToast('Battle Pass updated!'); renderBattlePass();
+    });
+
+    document.getElementById('settings-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      state.profile.username = document.getElementById('set-username').value.trim() || 'Scholar';
+      state.settings.dailyGoalMinutes = Math.max(10, parseInt(document.getElementById('set-daily-goal').value, 10) || 60);
+      state.settings.xpMultiplier = Math.max(0.5, parseFloat(document.getElementById('set-xp-mult').value) || 1);
+      state.settings.defaultTimer = document.getElementById('set-default-timer').value;
+      state.settings.soundsEnabled = document.getElementById('set-sounds').checked;
+      state.settings.reducedMotion = document.getElementById('set-reduced-motion').checked;
+      saveState(); showToast('Settings saved!'); renderAll();
+    });
+
+    document.getElementById('btn-export-json').addEventListener('click', () => {
+      const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `questmode-backup-${getTodayStr()}.json`; a.click();
+    });
+    document.getElementById('input-import-json').addEventListener('change', (e) => {
+      const file = e.target.files[0]; if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const imported = JSON.parse(reader.result);
+          if (imported && imported.profile && Array.isArray(imported.quests)) { state = imported; saveState(); renderAll(); showToast('Backup imported!'); }
+          else showToast('Invalid QuestMode backup file.');
+        } catch (err) { showToast('Could not parse JSON file.'); }
+      };
+      reader.readAsText(file);
+    });
+
+    const resetModal = document.getElementById('reset-modal');
+    document.getElementById('btn-open-reset-modal').addEventListener('click', () => resetModal.classList.remove('hidden'));
+    document.getElementById('btn-cancel-reset').addEventListener('click', () => resetModal.classList.add('hidden'));
+    document.getElementById('btn-confirm-reset').addEventListener('click', () => {
+      state = getDefaultState(); saveState(); resetModal.classList.add('hidden'); showToast('Profile reset.'); switchTab('dashboard');
+    });
+
+    document.getElementById('btn-clear-redeemed').addEventListener('click', () => {
+      state.redeemedRewards = [];
+      saveState();
+      renderMyRewards();
+      showToast('Redeemed history cleared.');
+    });
+
+    setInterval(() => {
+      if (state.timer.running) updateTimerDisplay();
+      if (state.breakTimer.active) renderBreakBanner();
+    }, 1000);
+
+    switchTab('dashboard');
+  </script>
+</body>
+</html>
